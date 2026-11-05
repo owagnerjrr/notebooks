@@ -120,7 +120,7 @@ conservar o arquivo original como histórico. Não limpar cache/dados do navegad
 
 ## Desenvolvimento e validação
 
-Node 22+ (produção existente usa 24): `npm ci`, `npm test`, `npm run build`.
+Node 24 (mesma versão fixada na Vercel): `npm ci`, `npm test`, `npm run build`.
 `npm run dev` inicia somente o front. APIs reais exigem Vercel; um front sem
 configuração mostra estado pendente e não aceita novas reservas.
 
@@ -133,8 +133,10 @@ firebase emulators:exec --only firestore --project demo-notebooks-tests "npm run
 Os testes usam projeto `demo-`, negam execução sem emulador e não escrevem em
 produção. Cobrem leituras, queries, gravações e subcoleções negadas para todos
 os clientes, concorrência de reservas, idempotência, limites administrativos e
-importação após cancelamento. O override de `@grpc/grpc-js` mantém a versão
-corrigida e é verificado por testes/auditoria de dependências.
+importação após cancelamento. Firebase Admin 13.10.0 evita a dependência ESM
+incompatível com o carregador de funções da Vercel observada na série 14. Os
+overrides de `@grpc/grpc-js` e `uuid` mantêm dependências corrigidas e são
+verificados por testes/auditoria de dependências.
 
 Referências: [transações](https://firebase.google.com/docs/firestore/manage-data/transactions),
 [App Check no backend](https://firebase.google.com/docs/app-check/custom-resource-backend),
