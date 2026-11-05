@@ -53,7 +53,11 @@ RATE_LIMIT_SECRET nunca usam prefixo VITE_ nem entram no GitHub. Conta de servi�
 dedicada notebooks-vercel com Cloud Datastore User. Firebase Authentication e
 papel de leitura de seus usuários não são necessários neste fluxo sem login.
 FIREBASE_CLIENT_EMAIL identifica essa conta. FIREBASE_PROJECT_ID fixo em
-central-notebooks-senac; banco (default). INTEGRATION_ENABLED=true somente após
+central-notebooks-senac; banco nomeado default (sem parênteses), Enterprise Native,
+southamerica-east1, com REALTIME_UPDATES_MODE_ENABLED, confirmado pela API do
+Google Cloud. Core operations são usadas para leituras em transação coordenadas
+com o listener realtime, requisito absoluto de sincronização e integridade deste
+fluxo. INTEGRATION_ENABLED=true somente após
 revisar o build. ALLOWED_ORIGINS contém as origens exatas de produção e teste.
 
 Rotacionar ADMIN_LINK_HASH e ADMIN_SESSION_SECRET revoga o link/sessões antigas.
@@ -70,7 +74,8 @@ concorrência, retentativas, importação, conflitos, autorização administrati
 cookie alterado/expirado e revogação por rotação de link.
 
 Testar preview primeiro e depois publicar o mesmo código em produção. Variáveis
-de credencial podem ser estendidas ao ambiente produção sem revelar valores.
+de credencial foram movidas para produção, sem ler valores, após o teste do
+preview. Novos previews não recebem as credenciais de produção.
 Conferir o 403 em operações administrativas sem cookie, histórico público sem
 auditoria, a reserva do Hugo e atualização entre dois clientes. Main e produção
 devem refletir o commit testado; não promover builds antigos com login individual.
@@ -80,3 +85,8 @@ para este rack pequeno. Alto volume exige rever contenção/paginação. Auditor
 de até 350 eventos por operação de arquivamento; nenhum dado é truncado.
 Firebase Admin 13.10.0 evita incompatibilidade ESM do carregador Vercel; overrides
 de grpc-js e uuid mantêm dependências corrigidas e verificadas por npm audit.
+
+Validação real em 05/11/2026: Hugo importado com recibo idempotente; duas leituras
+independentes confirmaram 21–25 às 13:00–17:30. SSE entregou evento após gravação.
+Operação administrativa pública retornou 403, reserva conflitante retornou 409 e
+segunda importação foi ignorada. Interface docente mostrou o registro do Hugo.

@@ -4,6 +4,8 @@ const metaPath = 'notebookMeta/state';
 const resCol = 'notebookReservations';
 export { metaPath };
 async function rowsForDays(tx, db, days) {
+  // Core operations are intentional on Enterprise Native: this flow requires
+  // transaction reads coordinated with the realtime revision listener.
   const rows = [];
   for (let offset = 0; offset < days.length; offset += 30) {
     const snap = await tx.get(db.collection(resCol).where('date', 'in', days.slice(offset, offset + 30)));

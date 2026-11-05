@@ -46,9 +46,6 @@ export function assertAvailable(candidates, existing, blocked, ignoreId) {
     if (existing.some(x => x.id !== ignoreId && !x.cancelled && conflicts(r, x))) fail(409, 'Outro agendamento ocupa os notebooks nesse período.');
   }
 }
-export function canSupervise(token, allowlist = '') {
-  return Boolean(token?.uid && (token.supervisor === true || allowlist.split(',').map(x => x.trim()).filter(Boolean).includes(token.uid)));
-}
 export function publicReservation(r) {
   return { id: r.id, teacher: r.teacher, room: r.room, classGroup: r.classGroup, date: r.date, start: r.start, end: r.end, numbers: r.numbers, groupId: r.groupId ?? r.id };
 }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { reservation, daysBetween, canSupervise, assertAvailable, hash } from '../server/domain.js';
+import { reservation, daysBetween, publicReservation, assertAvailable, hash } from '../server/domain.js';
 const hugo = { teacher: 'Hugo Oliveira De Faria', room: '206', classGroup: 'Aprendizagem', date: '2026-11-05', start: '13:00', end: '17:30', numbers: [21,22,23,24,25] };
 test('preserves the Hugo reservation when importing historical data', () => {
   assert.deepEqual(reservation(hugo, { historical: true }), hugo);
@@ -24,8 +24,8 @@ test('conflicts cover overlap and maintenance, adjacent reservations can coexist
   assert.throws(() => assertAvailable([hugo],[],[21]), { status:409 });
   assert.doesNotThrow(() => assertAvailable([hugo],existing,[],'one'));
 });
-test('querystrings, emails and ordinary accounts cannot grant supervision', () => {
-  for (const token of [null, { uid:'teacher' }, { uid:'teacher', painel:'supervisao' }, { uid:'teacher', supervisor:'true' }, { uid:'teacher', email:'admin@example.com' }]) assert.equal(canSupervise(token,'approved'),false);
-  assert.equal(canSupervise({uid:'approved'},' approved, other '),true);
-  assert.equal(canSupervise({uid:'admin',supervisor:true}),true);
+test('public projection only contains collection scheduling information', () => {
+  const result=publicReservation({...hugo,id:'reservation',actorUid:'admin-link',updatedAt:'private',cancelled:true});
+  assert.equal(result.actorUid,undefined);assert.equal(result.updatedAt,undefined);assert.equal(result.cancelled,undefined);
+  assert.deepEqual(result.numbers,[21,22,23,24,25]);
 });
