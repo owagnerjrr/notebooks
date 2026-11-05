@@ -9,7 +9,7 @@
     "test:emulator": "node --test test/emulator/*.test.js"
   },
   "engines": {
-    "node": ">=22"
+    "node": "24.x"
   },
   "dependencies": {
     "firebase": "^12.0.0",
