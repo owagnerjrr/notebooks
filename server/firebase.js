@@ -19,9 +19,10 @@ export async function services() {
     const response = await fetch(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/${database}`, { headers: { Authorization: 'Bearer ' + token.access_token } });
     if (!response.ok) fail(503, 'Consulta de configuração do Firestore recusada: ' + response.status + '.');
     const info = await response.json();
-    if (info.type !== 'FIRESTORE_NATIVE' || info.databaseEdition && info.databaseEdition !== 'STANDARD') fail(503, 'Edição do banco requer revisão: ' + info.type + '/' + info.databaseEdition + '.');
-    console.info('notebooks-database-validated', info.type, info.databaseEdition || 'STANDARD', info.locationId);
+    if (info.type !== 'FIRESTORE_NATIVE' || info.databaseEdition && !['STANDARD', 'ENTERPRISE'].includes(info.databaseEdition)) fail(503, 'Edição do banco requer revisão: ' + info.type + '/' + info.databaseEdition + '.');
+    console.info('notebooks-database-validated', info.type, info.databaseEdition || 'STANDARD', info.locationId, info.realtimeUpdatesMode);
+    return info;
   })().catch(error => { validated = null; throw error; });
-  await validated;
-  return { db: getFirestore(app, database), appCheck: getAppCheck(app) };
+  const info = await validated;
+  return { db: getFirestore(app, database), appCheck: getAppCheck(app), realtime: info.realtimeUpdatesMode !== 'REALTIME_UPDATES_MODE_DISABLED' };
 }

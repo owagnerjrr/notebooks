@@ -28,7 +28,12 @@ async function handle(request) {
         start(controller) {
           let closed = false;
           stop = () => { if (closed) return; closed = true; clearTimeout(timer); unsubscribe?.(); request.signal.removeEventListener('abort', stop); try { controller.close(); } catch {} };
-          unsubscribe = svc.db.doc(metaPath).onSnapshot(snap => {
+          // Enterprise native databases can be created without listeners.
+          // In that case poll only the revision document over this SSE stream.
+          if (!svc.realtime) {
+            const poll = async () => { try { const snap = await svc.db.doc(metaPath).get(); if (!closed) controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({revision:snap.data()?.revision || 0})}\n\n`)); } catch { stop(); } };
+            const interval = setInterval(poll, 3000); unsubscribe = () => clearInterval(interval); void poll();
+          } else unsubscribe = svc.db.doc(metaPath).onSnapshot(snap => {
             if (closed) return;
             try { controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ revision: snap.data()?.revision || 0 })}\n\n`)); } catch { stop(); }
           }, stop);
