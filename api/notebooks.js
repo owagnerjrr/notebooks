@@ -1,13 +1,13 @@
 import { services } from '../server/firebase.js';
 import { ApiError, fail, day } from '../server/domain.js';
-import { checkOrigin, identity, rateLimit } from '../server/security.js';
+import { checkOrigin, identity, rateLimit, openAdminSession, cookieName } from '../server/security.js';
 import { state, mutate, metaPath } from '../server/store.js';
 const headers = { 'Cache-Control': 'no-store', 'Content-Type': 'application/json; charset=utf-8' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers });
 async function handle(request) {
   try {
     checkOrigin(request);
-    const svc = services();
+    const svc = await services();
     const actor = await identity(request, svc);
     await rateLimit(request, svc.db, request.method === 'POST');
     if (request.method === 'POST') {
@@ -16,6 +16,8 @@ async function handle(request) {
       if (bytes.length > 24000) fail(413, 'Solicitação muito grande.');
       let body; try { body = JSON.parse(new TextDecoder().decode(bytes)); } catch { fail(400, 'JSON inválido.'); }
       if (!body || typeof body !== 'object' || Array.isArray(body)) fail(400, 'Solicitação inválida.');
+      if (body.action === 'openAdmin') return new Response(JSON.stringify({ supervisor: true }), { headers: { ...headers, 'Set-Cookie': openAdminSession(body.token) } });
+      if (body.action === 'closeAdmin') return new Response('{}', { headers: { ...headers, 'Set-Cookie': `${cookieName}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict` } });
       return json(await mutate(svc.db, body, actor));
     }
     const url = new URL(request.url), op = url.searchParams.get('op') || 'state';
