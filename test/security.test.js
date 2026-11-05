@@ -31,6 +31,16 @@ test('only the secret link authorizes admin; querystrings and fake bearer tokens
 test('cross-origin and originless writes are rejected',()=>{
   for(const origin of ['', 'https://evil.example'])assert.throws(()=>checkOrigin(new Request('https://site/api',{method:'POST',headers:origin?{origin}:{}})),{status:403});
 });
+test('full admin link authorizes independent devices without any cookie or login',async()=>{
+  const token='e'.repeat(64);process.env.ADMIN_LINK_HASH=createHash('sha256').update(token).digest('hex');
+  process.env.APP_CHECK_REQUIRED='false';
+  for(const device of ['device-a','device-b']){
+    const request=new Request('https://site/api?op=session',{headers:{'X-Notebooks-Admin-Link':token,'User-Agent':device}});
+    assert.equal(request.headers.get('cookie'),null);assert.equal((await identity(request,svc)).supervisor,true);
+  }
+  assert.equal((await identity(new Request('https://site/api?painel=supervisao'),svc)).supervisor,false);
+  await assert.rejects(identity(new Request('https://site/api',{headers:{'X-Notebooks-Admin-Link':'f'.repeat(64)}}),svc),{status:403});
+});
 test('deployment without configuration refuses all backend reads/writes',async()=>{
   process.env.INTEGRATION_ENABLED='false';
   assert.equal((await GET(new Request('https://site/api'))).status,503);

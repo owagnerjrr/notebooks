@@ -2,11 +2,12 @@ const ui = window.NotebooksUI;
 const status = document.getElementById('syncStatus');
 const login = document.getElementById('supervisorLogin');
 const requestedAdmin = new URLSearchParams(location.search).get('painel') === 'supervisao';
+let adminLink = requestedAdmin ? new URLSearchParams(location.hash.slice(1)).get('acesso') : null;
 let authorized = false, ready = false, streamAbort, refreshSequence = 0;
 const tell = message => { status.textContent = message; };
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function headers() {
-  return {};
+  return adminLink ? { 'X-Notebooks-Admin-Link': adminLink } : {};
 }
 async function api(query, body) {
   const response = await fetch('/api/notebooks?' + query, {
@@ -73,6 +74,8 @@ ui.setTransport(async (action, payload) => {
 ui.onRangeChange(() => refresh().catch(() => {}));
 document.getElementById('logout').addEventListener('click', async () => {
   await api('', { action: 'closeAdmin' });
+  adminLink = null;
+  history.replaceState(null, '', location.pathname + location.search);
   authorized = false; ui.authorize(false); login.hidden = !requestedAdmin;
   document.getElementById('logout').hidden = true;
   document.getElementById('importLocal').hidden = true;
@@ -102,13 +105,9 @@ document.getElementById('importLocal').addEventListener('click', async () => {
 });
 login.hidden = !requestedAdmin;
 try {
-  // Fragments are never sent in URLs/referrers or HTTP access logs. Exchange
-  // the private link once for a signed, HttpOnly cookie and erase the fragment.
-  const token = new URLSearchParams(location.hash.slice(1)).get('acesso');
-  if (requestedAdmin && token) {
-    await api('', { action: 'openAdmin', token });
-    history.replaceState(null, '', location.pathname + location.search);
-  }
+  // Keep the full private fragment in the address so copied/bookmarked links
+  // work on other computers. Send it only in same-origin API request headers;
+  // administrative authorization never depends on cookies or local storage.
   authorized = (await api('op=session')).supervisor && requestedAdmin;
   ui.authorize(authorized); login.hidden = !requestedAdmin || authorized;
   document.getElementById('logout').hidden = !authorized;

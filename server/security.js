@@ -3,12 +3,15 @@ import { fail } from './domain.js';
 export const cookieName = '__Host-notebooks-admin';
 const equal = (a, b) => typeof a === 'string' && typeof b === 'string' && a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
 const digest = value => createHash('sha256').update(value).digest('hex');
+export function hasAdminLink(token) {
+  return typeof token === 'string' && /^[a-f0-9]{64}$/.test(token) && equal(digest(token), process.env.ADMIN_LINK_HASH);
+}
 function sign(value) {
   if (!process.env.ADMIN_SESSION_SECRET || !process.env.ADMIN_LINK_HASH) fail(503, 'Acesso administrativo aguardando configuração.');
   return createHmac('sha256', process.env.ADMIN_SESSION_SECRET).update(value + ':' + process.env.ADMIN_LINK_HASH).digest('hex');
 }
 export function openAdminSession(token, now = Date.now()) {
-  if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token) || !equal(digest(token), process.env.ADMIN_LINK_HASH)) fail(403, 'Link administrativo inválido.');
+  if (!hasAdminLink(token)) fail(403, 'Link administrativo inválido.');
   const payload = Buffer.from(JSON.stringify({ exp: now + 8 * 3600000 })).toString('base64url');
   return `${cookieName}=${payload}.${sign(payload)}; Path=/; Max-Age=28800; HttpOnly; Secure; SameSite=Strict`;
 }
@@ -37,7 +40,9 @@ export async function identity(request, { appCheck }) {
     const result = await appCheck.verifyToken(token);
     if (result.appId !== process.env.FIREBASE_APP_ID) fail(401, 'Aplicativo inválido.');
   } catch { fail(401, 'Não foi possível verificar este aplicativo.'); }
-  const supervisor = hasAdminSession(request);
+  const link = request.headers.get('x-notebooks-admin-link');
+  if (link && !hasAdminLink(link)) fail(403, 'Link administrativo inválido.');
+  const supervisor = hasAdminLink(link) || hasAdminSession(request);
   return { user: supervisor ? { uid: 'admin-link' } : null, supervisor };
 }
 export async function rateLimit(request, db, write = false) {

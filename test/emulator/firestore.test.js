@@ -41,5 +41,11 @@ test('simultaneous bookings, replay, imports, cancellation and supervisor bounda
     const historical={...payload,date:'2026-11-05',numbers:[26]};
     assert.equal((await mutate(db,{action:'import',requestId:'historical-a',payload:{reservation:historical}},admin)).imported,true);
     assert.equal((await mutate(db,{action:'import',requestId:'historical-b',payload:{reservation:historical}},admin)).imported,false);
+    const past={...payload,date:'2020-11-05',numbers:[20]};
+    await mutate(db,{action:'import',requestId:'past-import',payload:{reservation:past}},admin);
+    const pastRecord=(await state(db,past.date,past.date,true)).reservations[0];
+    await mutate(db,{action:'edit',requestId:'past-correction',payload:{...pastRecord,room:'207'}},admin);
+    assert.equal((await state(db,past.date,past.date,true)).reservations[0].room,'207');
+    await assert.rejects(mutate(db,{action:'edit',requestId:'past-reschedule',payload:{...pastRecord,start:'12:30'}},admin),{status:400});
   } finally { await deleteApp(app); }
 });

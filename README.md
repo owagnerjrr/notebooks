@@ -3,9 +3,15 @@
 Dois links, sem formulário de login. Docentes usam a página pública. O endereço
 administrativo contém uma capacidade secreta de 256 bits no fragmento #acesso=.
 Quem possui o link administrativo pode administrar; compartilhe apenas com a
-Supervisão. O fragmento é trocado por cookie HttpOnly, Secure, SameSite=Strict,
-assinado, com validade de 8 horas, e removido do endereço visível após a abertura.
-Reabrir o link renova o acesso; não há conta, e-mail ou senha a preencher.
+Supervisão. O link completo permanece no endereço e funciona em qualquer
+computador/navegador, mesmo sem cookies. Cada chamada administrativa transmite
+a capacidade somente no cabeçalho X-Notebooks-Admin-Link da API na mesma origem;
+o servidor compara seu SHA-256 em tempo constante. Não há login nem cadastro.
+O fragmento não é enviado em URLs HTTP ou referrers. Copiar somente a parte
+anterior ao # remove a autorização. Cookies assinados antigos são aceitos apenas
+por compatibilidade; o link completo não depende deles nem de localStorage.
+Sair da Supervisão remove a capacidade da página atual, sem revogar o link.
+Rotação do hash revoga os links em todos os dispositivos.
 
 ## Segurança e sincronização
 
@@ -90,3 +96,5 @@ Validação real em 05/11/2026: Hugo importado com recibo idempotente; duas leit
 independentes confirmaram 21–25 às 13:00–17:30. SSE entregou evento após gravação.
 Operação administrativa pública retornou 403, reserva conflitante retornou 409 e
 segunda importação foi ignorada. Interface docente mostrou o registro do Hugo.
+
+Correções administrativas: formulários abertos não são sobrescritos pela atualização realtime/relógio. Correções de reservas já iniciadas mantêm o início original; reagendar para outro início continua exigindo horário futuro. Cancelamento preserva histórico.
