@@ -6,7 +6,7 @@ let validated;
 export async function services() {
   if (process.env.INTEGRATION_ENABLED !== 'true') fail(503, 'Sincronização aguardando configuração e validação.');
   const projectId = process.env.FIREBASE_PROJECT_ID, database = process.env.FIREBASE_DATABASE_ID || '(default)';
-  if (projectId !== 'central-notebooks-senac' || database !== '(default)') fail(503, 'Projeto Firebase inválido.');
+  if (projectId !== 'central-notebooks-senac' || !['(default)', 'default'].includes(database)) fail(503, 'Projeto Firebase inválido.');
   let app;
   try { app = getApps()[0] ?? initializeApp({ projectId, credential: process.env.FIREBASE_PRIVATE_KEY ? cert({ projectId, clientEmail: process.env.FIREBASE_CLIENT_EMAIL, privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') }) : applicationDefault() }); }
   catch { fail(503, 'A chave do servidor precisa ser conferida na configuração da Vercel.'); }
