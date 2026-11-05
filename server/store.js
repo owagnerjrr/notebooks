@@ -60,7 +60,9 @@ export async function mutate(db, body, actor) {
       if (action === 'cancel') {
         writes = [{ ...before, cancelled: true }]; detail = JSON.stringify(publicReservation(before));
       } else {
-        const after = { ...before, ...reservation(p) };
+        // Supervisors may correct an existing/ongoing booking without changing
+        // its original start. Rescheduling still requires a future start.
+        const after = { ...before, ...reservation(p, { historical: p.date === before.date && p.start === before.start }) };
         const existing = await rowsForDays(tx, db, [after.date]);
         assertAvailable([after], existing, meta.blocked, before.id);
         writes = [after]; detail = JSON.stringify(publicReservation(before)) + ' → ' + JSON.stringify(publicReservation(after));
