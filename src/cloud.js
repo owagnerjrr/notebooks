@@ -7,7 +7,7 @@ let authorized = false, ready = false, streamAbort, refreshSequence = 0;
 const tell = message => { status.textContent = message; };
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function headers() {
-  return adminLink ? { 'X-Notebooks-Admin-Link': adminLink } : {};
+  return requestedAdmin ? { 'X-Notebooks-Panel': 'supervisao' } : {};
 }
 async function api(query, body) {
   const response = await fetch('/api/notebooks?' + query, {
@@ -56,7 +56,7 @@ let sending = false;
 const pending = new Map();
 ui.setTransport(async (action, payload) => {
   if (!ready) throw new Error('Aguarde a conexão com o servidor.');
-  if (action !== 'reserve' && !authorized) throw new Error('Abra o link administrativo autorizado.');
+  if (action !== 'reserve' && !authorized) throw new Error('Abra o painel administrativo.');
   if (sending) throw new Error('Aguarde a operação em andamento.');
   const signature = JSON.stringify({ action, payload });
   const requestId = pending.get(signature) || crypto.randomUUID();
@@ -105,12 +105,10 @@ document.getElementById('importLocal').addEventListener('click', async () => {
 });
 login.hidden = !requestedAdmin;
 try {
-  // Keep the full private fragment in the address so copied/bookmarked links
-  // work on other computers. Send it only in same-origin API request headers;
-  // administrative authorization never depends on cookies or local storage.
+  // The supervisory URL opens directly, with no login or private fragment.
   authorized = (await api('op=session')).supervisor && requestedAdmin;
   ui.authorize(authorized); login.hidden = !requestedAdmin || authorized;
-  document.getElementById('logout').hidden = !authorized;
+  document.getElementById('logout').hidden = true;
   document.getElementById('importLocal').hidden = !authorized;
   await refresh();
   void realtime();
