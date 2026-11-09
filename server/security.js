@@ -42,8 +42,11 @@ export async function identity(request, { appCheck }) {
   } catch { fail(401, 'Não foi possível verificar este aplicativo.'); }
   const link = request.headers.get('x-notebooks-admin-link');
   if (link && !hasAdminLink(link)) fail(403, 'Link administrativo inválido.');
-  const supervisor = hasAdminLink(link) || hasAdminSession(request);
-  return { user: supervisor ? { uid: 'admin-link' } : null, supervisor };
+  // Public administrative link: possession of the URL is the only access distinction.
+  // This is intentionally not authentication; anyone can reproduce this header.
+  const publicAdmin = request.headers.get('x-notebooks-panel') === 'supervisao';
+  const supervisor = publicAdmin || hasAdminLink(link) || hasAdminSession(request);
+  return { user: supervisor ? { uid: publicAdmin ? 'public-admin-link' : 'admin-link' } : null, supervisor };
 }
 export async function rateLimit(request, db, write = false) {
   if (!process.env.RATE_LIMIT_SECRET) fail(503, 'Proteção de tráfego pendente.');
